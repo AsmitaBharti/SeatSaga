@@ -1,0 +1,46 @@
+@host = http://localhost:5001
+
+### Seed a small event (2 rows x 5 cols = 10 seats)
+POST {{host}}/api/events/seed
+Content-Type: application/json
+
+{
+  "name": "Test Concert",
+  "venueName": "Demo Arena",
+  "startsAt": "2026-12-01T19:00:00Z",
+  "basePrice": 49.99,
+  "rows": 2,
+  "cols": 5
+}
+
+### Get the seat map (replace 1 with the eventId returned above)
+GET {{host}}/api/events/1/seats
+
+### Hold a seat (replace 1 with a real seatId from the seat map)
+POST {{host}}/api/seats/1/hold
+Content-Type: application/json
+
+{
+  "bookingId": "11111111-1111-1111-1111-111111111111",
+  "userId": "22222222-2222-2222-2222-222222222222"
+}
+
+### Try to hold the SAME seat with a different bookingId -> expect LostRace or Unavailable
+POST {{host}}/api/seats/1/hold
+Content-Type: application/json
+
+{
+  "bookingId": "33333333-3333-3333-3333-333333333333",
+  "userId": "44444444-4444-4444-4444-444444444444"
+}
+
+### Release the hold
+POST {{host}}/api/seats/1/release
+Content-Type: application/json
+
+{
+  "bookingId": "11111111-1111-1111-1111-111111111111"
+}
+
+### Health check
+GET {{host}}/health

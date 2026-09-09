@@ -1,0 +1,84 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: seatsaga-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrong!Passw0rd"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  inventory-api:
+    build:
+      context: .
+      dockerfile: src/Services/Inventory/Inventory.Api/Dockerfile
+    container_name: seatsaga-inventory-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__InventoryDb: "Server=sqlserver,1433;Database=InventoryDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True"
+      # Concierge (LLM) feature — leave Llm__ApiKey unset to run without it; the
+      # feature degrades gracefully to default seat criteria (see SeatCriteriaParser).
+      Llm__ApiKey: "${ANTHROPIC_API_KEY:-}"
+      Llm__Model: "claude-sonnet-5"
+    ports:
+      - "5001:8080"
+
+  payment-api:
+    build:
+      context: .
+      dockerfile: src/Services/Payment/Payment.Api/Dockerfile
+    container_name: seatsaga-payment-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__PaymentDb: "Server=sqlserver,1433;Database=PaymentDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True"
+    ports:
+      - "5002:8080"
+
+  booking-api:
+    build:
+      context: .
+      dockerfile: src/Services/Booking/Booking.Api/Dockerfile
+    container_name: seatsaga-booking-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      inventory-api:
+        condition: service_started
+      payment-api:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__BookingDb: "Server=sqlserver,1433;Database=BookingDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True"
+      Services__InventoryBaseUrl: "http://inventory-api:8080/"
+      Services__PaymentBaseUrl: "http://payment-api:8080/"
+    ports:
+      - "5003:8080"
+
+  # ---- Added in later phases (kept here as a roadmap, commented out until built) ----
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   ports: ["5672:5672", "15672:15672"]
+  #
+  # redis:
+  #   image: redis:7-alpine
+  #   ports: ["6379:6379"]
+  #
+  # jaeger:
+  #   image: jaegertracing/all-in-one:latest
+  #   ports: ["16686:16686", "4317:4317"]
+
+volumes:
+  sqlserver-data:

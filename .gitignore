@@ -1,0 +1,31 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+## Test results
+[Tt]est[Rr]esult*/
+
+## User secrets / local config
+appsettings.*.local.json
+secrets.json
+
+## API keys / secrets - never commit these
+.env
+*.env
+**/secrets.json
+
+## Docker
+.env
+
+## OS files
+.DS_Store
+Thumbs.db

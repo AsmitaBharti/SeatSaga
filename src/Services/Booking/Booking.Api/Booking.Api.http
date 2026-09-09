@@ -1,0 +1,35 @@
+@host = http://localhost:5003
+
+### Place a booking (seed an event + seatId via Inventory Service first, use a real seatId here)
+POST {{host}}/api/bookings
+Content-Type: application/json
+
+{
+  "eventId": 1,
+  "seatId": 1,
+  "userId": "22222222-2222-2222-2222-222222222222",
+  "amount": 49.99,
+  "idempotencyKey": "demo-key-001"
+}
+
+### Expected right now: seat gets held successfully, then payment call fails
+### (Payment Service doesn't exist yet) -> after retries + circuit breaker,
+### booking compensates: seat is released, status ends as Cancelled.
+
+### Get booking status (replace with the bookingId returned above)
+GET {{host}}/api/bookings/00000000-0000-0000-0000-000000000000
+
+### Re-send the SAME idempotencyKey -> should return the original booking, not create a new one
+POST {{host}}/api/bookings
+Content-Type: application/json
+
+{
+  "eventId": 1,
+  "seatId": 1,
+  "userId": "22222222-2222-2222-2222-222222222222",
+  "amount": 49.99,
+  "idempotencyKey": "demo-key-001"
+}
+
+### Health check
+GET {{host}}/health

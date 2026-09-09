@@ -1,0 +1,46 @@
+@host = http://localhost:5002
+
+### Charge a payment
+POST {{host}}/api/payments/charge
+Content-Type: application/json
+
+{
+  "bookingId": "11111111-1111-1111-1111-111111111111",
+  "amount": 49.99,
+  "idempotencyKey": "demo-key-001"
+}
+
+### Re-send the SAME idempotencyKey -> returns the original transaction, doesn't double-charge
+POST {{host}}/api/payments/charge
+Content-Type: application/json
+
+{
+  "bookingId": "11111111-1111-1111-1111-111111111111",
+  "amount": 49.99,
+  "idempotencyKey": "demo-key-001"
+}
+
+### Turn on chaos: 100% failure rate -> now place a booking via Booking.Api and
+### watch its logs show retry attempts, then the circuit breaker trip, then compensation
+POST {{host}}/admin/chaos
+Content-Type: application/json
+
+{
+  "failureRatePct": 100,
+  "latencyMs": 0
+}
+
+### Check current chaos settings
+GET {{host}}/admin/chaos
+
+### Turn chaos back off
+POST {{host}}/admin/chaos
+Content-Type: application/json
+
+{
+  "failureRatePct": 0,
+  "latencyMs": 0
+}
+
+### Health check
+GET {{host}}/health

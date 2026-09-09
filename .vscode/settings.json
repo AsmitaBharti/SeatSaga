@@ -1,0 +1,9 @@
+{
+  "dotnet.defaultSolution": "SeatSaga.sln",
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true
+  },
+  "omnisharp.enableEditorConfigSupport": true,
+  "editor.formatOnSave": true
+}
